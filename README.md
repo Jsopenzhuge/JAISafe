@@ -2,6 +2,10 @@
   <img src="logo.png" alt="JAISafe — Local Privacy Boundary for AI Agents" width="620">
 </p>
 
+<p align="center">
+  <a href="README.md">简体中文</a> · <a href="README.en.md">English</a>
+</p>
+
 <h1 align="center">把本机上下文留在本机</h1>
 
 <p align="center">
@@ -49,7 +53,7 @@ JAISafe 做的事很具体：**把这一层剥掉再发出去**。
 
 | | 客户端原文（本机） | 实际发送给上游 |
 | --- | --- | --- |
-| 路径 | `C:\Users\1\Desktop\MyWork\JAISafe\llm-gateway\app\relay.py` | `[WORKSPACE_ROOT_1]\llm-gateway\app\relay.py` |
+| 路径 | `C:\Users\me\projects\myapp\src\server.py` | `[WORKSPACE_ROOT_1]\src\server.py` |
 | 凭证 | `ghp_9fK2mQ…`（36 位真 token） | `ghp_Xy3kPq…`（同长度同前缀，HMAC 派生） |
 | 文件名 | `layoff_plan_2026.pdf` | `[SENSITIVE_DOC_1].pdf` |
 | 主机 | `vault.acme-corp.internal` | `host-a7f2q9.corp.internal` |
@@ -160,7 +164,7 @@ export ANTHROPIC_API_KEY=sk-jai-xxxx
 「脱敏」→ 填**路径根目录**（你的代码工作区），例如：
 
 ```
-C:\Users\1\Desktop\MyWork\JAISafe
+C:\Users\me\projects\myapp
 ```
 
 命中根目录的路径会保留完整相对路径（可读性最好）；未命中但位于主目录下的路径会折叠中段。

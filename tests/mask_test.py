@@ -55,8 +55,8 @@ def engine_for(session: str = "t1", **kw: Any) -> MaskEngine:
 # --------------------------------------------------------------------------- #
 def test_paths() -> None:
     print("\n== 1. 路径抽象（Windows / POSIX） ==")
-    check("canonical windows", canonical(r"C:\Users\1\a") == "c:/users/1/a",
-          canonical(r"C:\Users\1\a"))
+    check("canonical windows", canonical(r"C:\Users\me\a") == "c:/users/me/a",
+          canonical(r"C:\Users\me\a"))
     check("canonical posix", canonical("/home/u/a") == "/home/u/a", canonical("/home/u/a"))
     check("windows 反斜杠等价",
           is_under(r"C:\WS\proj\a\b.py", r"C:/WS/proj") is True)
@@ -68,21 +68,21 @@ def test_paths() -> None:
     check("split_path 双反斜杠", split_path(r"C:\\a\\b")[1] == ["a", "b"],
           str(split_path(r"C:\\a\\b")))
 
-    e = engine_for("p1", workspace_roots=[r"C:\Users\1\Desktop\MyWork\JAISafe"],
+    e = engine_for("p1", workspace_roots=[r"C:\Users\me\projects\myapp"],
                    include_home=False)
-    out = e.abstract_path(r"C:\Users\1\Desktop\MyWork\JAISafe\llm-gateway\app\relay.py")
+    out = e.abstract_path(r"C:\Users\me\projects\myapp\src\app\relay.py")
     check("workspace 根被抽象", out is not None and out.startswith("[WORKSPACE_ROOT_1]\\"),
           str(out))
     check("保留分隔符风格", out is not None and "\\" in out, str(out))
     # 幂等：同一路径两次得到同一 handle
-    out2 = e.abstract_path(r"C:\Users\1\Desktop\MyWork\JAISafe\llm-gateway\app\relay.py")
+    out2 = e.abstract_path(r"C:\Users\me\projects\myapp\src\app\relay.py")
     check("同一路径 handle 稳定", out == out2, f"{out} vs {out2}")
     # 不同路径共享根
-    out3 = e.abstract_path(r"C:\Users\1\Desktop\MyWork\JAISafe\llm-gateway\run.py")
+    out3 = e.abstract_path(r"C:\Users\me\projects\myapp\run.py")
     check("同根共享 root handle",
           out3 is not None and out3.startswith("[WORKSPACE_ROOT_1]\\"), str(out3))
     check("根目录自身",
-          e.abstract_path(r"C:\Users\1\Desktop\MyWork\JAISafe") == "[WORKSPACE_ROOT_1]")
+          e.abstract_path(r"C:\Users\me\projects\myapp") == "[WORKSPACE_ROOT_1]")
     # 未配置的根不抽象
     check("范围外不抽象",
           e.abstract_path(r"D:\other\thing\file.txt") is None,
