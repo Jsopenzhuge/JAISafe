@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JAISafe LLM Gateway</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <h1 id="loginTitle">JAISafe LLM Gateway</h1>
+    <p>本地 LLM API 中转服务</p>
+    <label class="field">
+      <span>管理密码</span>
+      <input type="password" id="loginPassword" placeholder="默认 admin" autocomplete="current-password">
+    </label>
+    <button class="btn primary" id="loginBtn" style="width:100%;justify-content:center">登录</button>
+    <div id="loginError" style="margin-top:10px;font-size:12.5px;color:var(--err)"></div>
+  </div>
+</div>
+
+<div class="app hidden" id="app">
+  <aside class="sidebar">
+    <div class="brand" id="brand">JAISafe Gateway<small>LLM API 中转</small></div>
+    <nav class="nav" id="nav">
+      <button data-page="overview">
+        <span class="icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1"/><rect x="10" y="10" width="5.5" height="5.5" rx="1"/></svg></span>
+        <span>概览</span></button>
+      <button data-page="channels">
+        <span class="icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="2.8" width="13" height="5" rx="1.4"/><rect x="2.5" y="10.2" width="13" height="5" rx="1.4"/><circle cx="5.4" cy="5.3" r=".9" fill="currentColor" stroke="none"/><circle cx="5.4" cy="12.7" r=".9" fill="currentColor" stroke="none"/></svg></span>
+        <span>渠道</span></button>
+      <button data-page="keys">
+        <span class="icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.2" cy="9" r="3.4"/><path d="M9.6 9h5.9M13.4 9v2.4M15.5 9v1.8"/></svg></span>
+        <span>密钥</span></button>
+      <button data-page="logs">
+        <span class="icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4.5h12M3 9h12M3 13.5h7.5"/></svg></span>
+        <span>请求日志</span></button>
+      <button data-page="mask">
+        <span class="icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2.4l5.4 1.9v4.1c0 3.2-2.2 5.6-5.4 6.8-3.2-1.2-5.4-3.6-5.4-6.8V4.3z"/></svg></span>
+        <span>脱敏</span></button>
+      <button data-page="playground">
+        <span class="icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3" width="13" height="12" rx="1.4"/><path d="M5.6 7l2.4 2.4-2.4 2.4M9.8 11.9h3.4"/></svg></span>
+        <span>接口调试</span></button>
+      <button data-page="settings">
+        <span class="icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="2.3"/><path d="M9 2.4v1.8M9 13.8v1.8M2.4 9h1.8M13.8 9h1.8M4.4 4.4l1.3 1.3M12.3 12.3l1.3 1.3M13.6 4.4l-1.3 1.3M5.7 12.3l-1.3 1.3"/></svg></span>
+        <span>设置</span></button>
+    </nav>
+    <div class="sidebar-foot">
+      <button id="logoutBtn">退出登录</button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- 概览 -->
+    <section class="page active" id="page-overview">
+      <div class="page-head">
+        <div><h2>概览</h2><div class="sub" id="overviewSub"></div></div>
+        <button class="btn" id="refreshOverview">刷新</button>
+      </div>
+      <div class="cards" id="statCards"></div>
+      <div class="panel">
+        <div class="panel-head">渠道状态</div>
+        <div class="panel-body flush"><div id="overviewChannels"></div></div>
+      </div>
+      <div class="row" style="align-items:flex-start">
+        <div class="panel" style="flex:1;min-width:280px">
+          <div class="panel-head">模型调用排行</div>
+          <div class="panel-body flush"><div id="overviewModels"></div></div>
+        </div>
+        <div class="panel" style="flex:1;min-width:280px">
+          <div class="panel-head">最近请求</div>
+          <div class="panel-body flush"><div id="overviewRecent"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 渠道 -->
+    <section class="page" id="page-channels">
+      <div class="page-head">
+        <div><h2>渠道</h2><div class="sub">上游供应商配置，按优先级自动故障转移</div></div>
+        <button class="btn primary" id="addChannelBtn">新增渠道</button>
+      </div>
+      <div class="panel">
+        <div class="panel-body flush"><div id="channelTable"></div></div>
+      </div>
+    </section>
+
+    <!-- 密钥 -->
+    <section class="page" id="page-keys">
+      <div class="page-head">
+        <div><h2>API 密钥</h2><div class="sub" id="keySub"></div></div>
+        <button class="btn primary" id="addKeyBtn">新增密钥</button>
+      </div>
+      <div class="panel">
+        <div class="panel-body flush"><div id="keyTable"></div></div>
+      </div>
+    </section>
+
+    <!-- 日志 -->
+    <section class="page" id="page-logs">
+      <div class="page-head">
+        <div><h2>请求日志</h2><div class="sub">每次请求发送与接收的完整内容</div></div>
+        <div class="toolbar">
+          <input type="text" id="logKeyword" placeholder="搜索模型 / 路径 / 内容">
+          <select id="logStatus">
+            <option value="">全部状态</option>
+            <option value="ok">成功</option>
+            <option value="error">失败</option>
+          </select>
+          <button class="btn" id="logSearchBtn">查询</button>
+          <button class="btn" id="logRefreshBtn">自动刷新：关</button>
+          <button class="btn danger" id="logClearBtn">清空</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-body flush"><div id="logTable"></div></div>
+        <div class="panel-body right" id="logPager"></div>
+      </div>
+    </section>
+
+    <!-- 脱敏 -->
+    <section class="page" id="page-mask">
+      <div class="page-head">
+        <div><h2>本地上下文脱敏</h2>
+          <div class="sub">把本机绝对路径与凭证替换为句柄后发送给上游，响应返回时还原</div></div>
+        <button class="btn" id="maskRefresh">刷新</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">运行模式</div>
+        <div class="panel-body">
+          <div class="row">
+            <label class="field"><span>脱敏模式</span>
+              <select id="maskMode">
+                <option value="off">关闭 — 请求原样转发</option>
+                <option value="dry_run">干跑 — 只记录命中，不改写请求</option>
+                <option value="enforce">强制 — 脱敏发送并在响应中还原</option>
+              </select>
+            </label>
+            <label class="field"><span>会话标识来源</span>
+              <select id="maskSessionSource">
+                <option value="auto">自动：请求头 &gt; 请求体 user &gt; API Key &gt; IP</option>
+                <option value="header">仅 X-Mask-Session 请求头</option>
+                <option value="api_key">按 API Key 隔离</option>
+                <option value="ip">按客户端 IP 隔离</option>
+                <option value="global">全局共用一套句柄</option>
+              </select>
+              <div class="hint">同一真值需在同一会话内保持同一句柄，否则模型每轮看到的路径不一致。</div>
+            </label>
+          </div>
+          <div class="note" id="maskWarn"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">脱敏范围</div>
+        <div class="panel-body">
+          <div class="check"><input type="checkbox" id="maskPaths"><label for="maskPaths">本机路径（根目录与敏感文件名）</label></div>
+          <div class="check"><input type="checkbox" id="maskCreds"><label for="maskCreds">凭证（API Key、JWT、连接串、私钥、邮箱、内部主机名）</label></div>
+          <div class="check"><input type="checkbox" id="maskIncludeHome"><label for="maskIncludeHome">将用户主目录作为兜底根目录</label></div>
+          <div class="check"><input type="checkbox" id="maskOutside"><label for="maskOutside">范围外的绝对路径也脱敏（如 /usr/bin、/etc）</label></div>
+          <div class="check"><input type="checkbox" id="maskPropagate"><label for="maskPropagate">跨轮传播：已出现过的真值即使正则未命中也被替换</label></div>
+          <div class="row">
+            <label class="field"><span>路径根目录（每行一个）</span>
+              <textarea id="maskWorkspaceRoots" rows="3" placeholder="C:\Users\1\Desktop\MyWork\JAISafe"></textarea>
+              <div class="hint">命中根目录时保留完整相对路径。</div>
+            </label>
+            <label class="field"><span>仓库根目录（优先级高于上一项）</span>
+              <textarea id="maskRepoRoots" rows="3" placeholder="留空"></textarea>
+            </label>
+          </div>
+          <div class="row">
+            <label class="field"><span>主目录折叠时保留的末级段数</span>
+              <input type="number" id="maskPreserveSegments" min="0" value="3"></label>
+            <label class="field"><span>凭证替换方式</span>
+              <select id="maskCredMode">
+                <option value="fps">格式保持 — 长度与前缀一致</option>
+                <option value="placeholder">占位符 — ACCESS_TOKEN_1</option>
+              </select>
+            </label>
+          </div>
+          <label class="field"><span>敏感文件名关键词（逗号或换行分隔）</span>
+            <textarea id="maskKeywords" rows="2" placeholder="留空使用内置词表"></textarea>
+          </label>
+          <label class="field"><span>内部主机名后缀</span>
+            <input type="text" id="maskSuffixes" placeholder=".internal,.intranet,.corp,.local,.lan"></label>
+          <div class="check"><input type="checkbox" id="maskStoreMap">
+            <label for="maskStoreMap">保存句柄与真值的映射（关闭后无法还原，也无法在日志中回溯）</label></div>
+          <label class="field" style="max-width:300px"><span>脱敏数据保留天数（0 为永久）</span>
+            <input type="number" id="maskRetention" min="0" value="7"></label>
+          <button class="btn primary" id="maskSave">保存设置</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">规则预览</div>
+        <div class="panel-body">
+          <label class="field"><span>粘贴一段文本，按当前设置试跑（不影响真实请求）</span>
+            <textarea id="maskPreviewInput" rows="3" placeholder="例如：请读取 C:\Users\1\project\secret\layoff_plan_2026.pdf，token 是 sk-..."></textarea>
+          </label>
+          <button class="btn" id="maskPreviewBtn">试跑</button>
+          <div id="maskPreviewResult" style="margin-top:14px"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <span>会话与映射</span>
+          <button class="btn danger mini" id="maskClearAll">清空全部映射</button>
+        </div>
+        <div class="panel-body flush"><div id="maskSessions"></div></div>
+      </div>
+    </section>
+
+    <!-- 调试 -->
+    <section class="page" id="page-playground">
+      <div class="page-head">
+        <div><h2>接口调试</h2><div class="sub">直接调用本网关，验证格式转换与流式输出</div></div>
+      </div>
+      <div class="row" style="align-items:flex-start">
+        <div class="panel" style="flex:1;min-width:320px">
+          <div class="panel-head">请求</div>
+          <div class="panel-body">
+            <div class="row">
+              <label class="field"><span>接口格式</span>
+                <select id="pgFormat">
+                  <option value="openai">OpenAI Chat Completions</option>
+                  <option value="anthropic">Anthropic Messages</option>
+                  <option value="openai_responses">OpenAI Responses</option>
+                  <option value="openai_completions">OpenAI Completions (legacy)</option>
+                </select>
+              </label>
+              <label class="field"><span>模型</span><input type="text" id="pgModel" placeholder="gpt-4o-mini"></label>
+            </div>
+            <label class="field"><span>网关密钥</span><input type="text" id="pgKey" placeholder="未启用鉴权时可留空"></label>
+            <label class="field"><span>输入内容</span><textarea id="pgInput" rows="3">你好，请用一句话介绍你自己。</textarea></label>
+            <div class="row">
+              <label class="field"><span>max_tokens</span><input type="number" id="pgMaxTokens" value="256"></label>
+              <label class="field"><span>系统提示</span><input type="text" id="pgSystem" placeholder="可选"></label>
+            </div>
+            <div class="check"><input type="checkbox" id="pgStream" checked><label for="pgStream">流式输出</label></div>
+            <div class="toolbar">
+              <button class="btn primary" id="pgSend">发送请求</button>
+              <button class="btn" id="pgCurl">生成 curl</button>
+              <button class="btn" id="pgClear">清空</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel" style="flex:1;min-width:320px">
+          <div class="panel-head">响应 <span class="badge" id="pgStatus">待发送</span></div>
+          <div class="panel-body"><pre class="code" id="pgOutput" style="max-height:52vh">—</pre></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section class="page" id="page-settings">
+      <div class="page-head"><div><h2>设置</h2><div class="sub">网关行为与日志策略</div></div></div>
+      <div class="panel">
+        <div class="panel-head">基础设置</div>
+        <div class="panel-body">
+          <div class="row">
+            <label class="field"><span>站点名称</span><input type="text" id="setSiteName"></label>
+            <label class="field"><span>日志保留天数（0 为永久）</span><input type="number" id="setRetention" min="0"></label>
+          </div>
+          <label class="field"><span>单条日志正文最大字节数</span><input type="number" id="setMaxBody" min="1024" step="1024">
+            <div class="hint">超出部分会被截断。</div>
+          </label>
+          <div class="check"><input type="checkbox" id="setRequireKey"><label for="setRequireKey">强制校验 API Key（即使未创建密钥）</label></div>
+          <div class="check"><input type="checkbox" id="setLogReq"><label for="setLogReq">记录请求体</label></div>
+          <div class="check"><input type="checkbox" id="setLogResp"><label for="setLogResp">记录响应体</label></div>
+          <button class="btn primary" id="saveSettings">保存设置</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">修改管理密码</div>
+        <div class="panel-body">
+          <div class="row">
+            <label class="field"><span>原密码</span><input type="password" id="pwOld"></label>
+            <label class="field"><span>新密码</span><input type="password" id="pwNew"></label>
+          </div>
+          <button class="btn primary" id="savePassword">修改密码</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">接入地址</div>
+        <div class="panel-body">
+          <div class="kv" id="endpointList"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toasts"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

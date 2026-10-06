@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+data/
+data_test/
+*.log
+smoke_out.txt
+.venv/
+venv/
